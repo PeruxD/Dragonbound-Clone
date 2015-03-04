@@ -1,0 +1,424 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.IO;
+using GameServerDB.Components;
+
+namespace GameServerDB.Users
+{
+    class User
+    {
+        #region Define
+        public int ID;
+
+        public string Name = "test";
+        public int rank = 0;
+        public int user_id = 1;
+        public int version = 0;
+        public string user_key = "xxxx";
+        public string user_fb = "13131";
+        public string gender = "m";
+        public Int64 foto = 0;
+        public int gold = 0;
+        public int cash = 0;
+        public int gp = 0;
+        //
+        public int head = 1;
+        public int body = 2;
+        public int eyes = 0;
+        public int flag = 0;
+        public int background = 0;
+        public int foreground = 0;
+        public int room_number = 0;
+        public int location_type = 1;
+        public int unlock = 6;
+        public int event1 = -1;
+        public int event2 = -1;
+        public int guild = 0;
+        public int guild_job = 1;
+        public string guild_name = "";
+        public int name_changes = 1;
+        public int power_user = 0;
+        //Sala
+        public int Position = 0;
+        public int Is_Master = 0;
+        public int Is_Ready = 0;
+        public int Is_Bot = 0;
+        // game_move guardar a donde **** se mueve el user
+        public int x;
+        public int y;
+        public int body_move;
+        public int look;
+        public int ang;
+        public int mobil = 0;
+        public string unk0 = null;
+        public int channel = 0;
+        public bool playing = false;
+        #endregion
+        public User(int _id)
+        {
+            ID = _id;
+        }
+        public void LoadUser(int ver, int uid, string key)
+        {
+            user_id = uid;
+            version = ver;
+
+            SQLResult result = Program._SQL.Select("SELECT * FROM users WHERE id=?", user_id);
+            if (result.Count != 0)
+            {
+                user_id = result.Read<int>(0, "id");
+                Name = result.Read<string>(0, "Name");
+                rank = result.Read<int>(0, "rank");
+                user_fb = result.Read<string>(0, "fbid");
+                gold = result.Read<int>(0, "gold");
+                cash = result.Read<int>(0, "cash");
+                gp = result.Read<int>(0, "gp");
+                gender = result.Read<string>(0, "gender");
+                user_key = result.Read<string>(0, "Key");
+                if (!(result.Read<int>(0, "foto") == 0))
+                    foto = Int64.Parse(user_fb);
+                guild = result.Read<int>(0, "guild");
+                if (guild > 0)
+                {
+                    SQLResult resultxx = Program._SQL.Select("SELECT a.nombre, o.rango FROM guild a JOIN guild_members o ON a.id = o.id_guild AND o.id_user=?", user_id);
+                    guild_name = resultxx.Read<string>(0, "nombre");
+                    guild_job = resultxx.Read<int>(0, "rango");
+                }
+            }
+        }
+
+        public void LoadinfoAvatars()
+        {
+            SQLResult result2 = Program._SQL.Select("SELECT a.avatar,i.genero,i.parte FROM user_items a JOIN items i ON a.avatar=i.id AND a.puesto=1 AND a.id_user=?", user_id);
+            if (result2.Count != 0)
+            {
+                for (int p = 0; p < result2.Count; p++)
+                {
+                    int _avatar = result2.Read<int>(p, "avatar");
+                    string _parte = result2.Read<string>(p, "parte");
+                    switch (_parte)
+                    {
+                        case "h": { head = _avatar; break; }
+                        case "e": { eyes = _avatar; break; }
+                        case "b": { body = _avatar; break; }
+                        case "f": { flag = _avatar; break; }
+                        case "1": { background = _avatar; break; }
+                        case "2": { foreground = _avatar; break; }
+                    }
+                }
+            }
+        }
+
+        public string PlayerInfo()
+        {
+            StringBuilder sb = new StringBuilder();
+            StringWriter sw = new StringWriter(sb);
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                writer.Formatting = Formatting.None;
+                writer.WriteStartArray();
+                writer.WriteValue((int)ServerOpcode.my_player_info);
+                writer.WriteStartArray();
+                writer.WriteValue(user_id);
+                writer.WriteValue(location_type);
+                writer.WriteValue(room_number);
+                writer.WriteValue(Name);
+                writer.WriteValue(rank);
+                writer.WriteValue(gp);
+                writer.WriteValue(gold);
+                writer.WriteValue(cash);
+                writer.WriteValue(gender);
+                writer.WriteValue(unlock);
+                writer.WriteValue(head);
+                writer.WriteValue(body);
+                writer.WriteValue(eyes);
+                writer.WriteValue(flag);
+                writer.WriteValue(foreground);
+                writer.WriteValue(background);
+                writer.WriteValue(event1);
+                writer.WriteValue(event2);
+                writer.WriteValue(foto);
+
+                if (guild > 0)
+                    writer.WriteValue(guild_name);
+                else
+                    writer.WriteValue(guild);
+
+                writer.WriteValue(guild_job);
+                writer.WriteValue(name_changes);
+                writer.WriteValue(power_user);
+                writer.WriteEndArray();
+                writer.WriteEndArray();
+            }
+            return sb.ToString();
+        }
+
+        public string UpdateBoddy()
+        {
+            StringBuilder sb = new StringBuilder();
+            StringWriter sw = new StringWriter(sb);
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                writer.Formatting = Formatting.None;
+                writer.WriteStartArray();
+                writer.WriteValue((int)ServerOpcode.channel_players);
+                writer.WriteStartArray();
+
+                foreach (KeyValuePair<int, Session> _entry in Program.SessionsManager.Sessions)
+                {
+                    writer.WriteValue(_entry.Value.User.user_id);
+                    writer.WriteValue(_entry.Value.User.Name);
+                    writer.WriteValue(_entry.Value.User.rank);
+                    writer.WriteValue(_entry.Value.User.unk0);
+                }
+                
+                writer.WriteEndArray();
+                writer.WriteEndArray();
+            }
+            return sb.ToString();
+        }
+
+        public string Guildinfo()
+        {
+            SQLResult result = Program._SQL.Select("SELECT a.id, a.gp, a.rank, a.name, a.gender, a.fbid, o.rango FROM users a JOIN guild_members o ON a.guild=o.id_guild AND o.id_user=?", user_id);
+            if (result.Count != 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                StringWriter sw = new StringWriter(sb);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    writer.Formatting = Formatting.None;
+                    writer.WriteStartArray();
+                    writer.WriteValue((int)ServerOpcode.guild);
+                    writer.WriteStartArray();
+                    writer.WriteValue(guild_name);
+                    writer.WriteValue(guild_job);
+                    for (int p = 0; p < result.Count; p++)
+                    {
+                        int _id = result.Read<int>(p, "id");
+                        int _gp = result.Read<int>(p, "gp");
+                        int _rank = result.Read<int>(p, "rank");
+                        string _name = result.Read<string>(p, "name");
+                        string _gender = result.Read<string>(p, "gender");
+                        string _fbid = result.Read<string>(p, "fbid");
+                        int _rango = result.Read<int>(p, "rango");
+                        writer.WriteStartArray();
+                        writer.WriteValue(_id);
+                        writer.WriteValue(_name);
+                        writer.WriteValue(_gender);
+                        writer.WriteValue(_rank);
+                        writer.WriteValue(_gp);
+                        writer.WriteValue(Int64.Parse(_fbid));
+                        writer.WriteValue(-1);
+                        writer.WriteValue(_rango);
+                        writer.WriteEndArray();
+                    }
+                    writer.WriteEndArray();
+                    writer.WriteEndArray();
+                }
+                return sb.ToString();
+            }
+            return "";
+        }
+
+        public string ListFriends()
+        {
+            SQLResult result = Program._SQL.Select("SELECT a.id, a.gp, a.rank, a.name, a.gender FROM users a JOIN amigos o ON a.id=o.id_amigo AND o.id_yo=?", user_id);
+            if (result.Count != 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                StringWriter sw = new StringWriter(sb);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    writer.Formatting = Formatting.None;
+                    writer.WriteStartArray();
+                    writer.WriteValue((int)ServerOpcode.friends);
+                    writer.WriteStartArray();
+                    for (int p = 0; p < result.Count; p++)
+                    {
+                        int _id = result.Read<int>(p, "id");
+                        int _gp = result.Read<int>(p, "gp");
+                        int _rank = result.Read<int>(p, "rank");
+                        string _name = result.Read<string>(p, "name");
+                        string _gender = result.Read<string>(p, "gender");
+                        writer.WriteStartArray();
+                        writer.WriteValue(_id);
+                        writer.WriteValue(_name);
+                        writer.WriteValue(_gender);
+                        writer.WriteValue(_rank);
+                        writer.WriteValue(_gp);
+                        writer.WriteValue("");
+                        writer.WriteValue(0);
+                        writer.WriteEndArray();
+                    }
+                    writer.WriteEndArray();
+                    writer.WriteEndArray();
+                }
+                return sb.ToString();
+            }
+            return "";
+        }
+
+        public string ChangeName(string _name)
+        {
+            SQLResult result = Program._SQL.Select("SELECT gold FROM users WHERE id=?", user_id);
+            if (result.Count != 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                StringWriter sw = new StringWriter(sb);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    writer.Formatting = Formatting.None;
+                    writer.WriteStartArray();
+                    writer.WriteValue((int)ServerOpcode.alert);
+                    if (result.Read<int>(0, "gold") > 4000)
+                    {
+                        Name = _name;
+                        gold = gold - 4000;
+                        Program._SQL.Execute("UPDATE users SET Name='" + Name + "',gold=gold-4000 WHERE id=" + user_id);
+                        writer.WriteValue("ChangeName");
+                        writer.WriteValue("Tu Nombre Fue Cambiado.");
+                    }
+                    else
+                    {
+                        writer.WriteValue("Sorry");
+                        writer.WriteValue("Not enough cash.<p>Name change costs 4,000 cash.");
+                    }
+                    writer.WriteEndArray();
+                }
+                return sb.ToString();
+            }
+            return "";
+        }
+
+        public string GetAvatars()
+        {
+            SQLResult result = Program._SQL.Select("SELECT no, avatar, puesto FROM user_items WHERE id_user=?", user_id);
+            if (result.Count != 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                StringWriter sw = new StringWriter(sb);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    writer.Formatting = Formatting.None;
+                    writer.WriteStartArray();
+                    writer.WriteValue((int)ServerOpcode.my_avatars);
+                    writer.WriteStartArray();
+                    writer.WriteStartArray();
+                    for (int i = 0; i < result.Count; i++)
+                    {
+                        writer.WriteStartArray();
+                        writer.WriteValue(result.Read<int>(i, "no"));
+                        writer.WriteValue(result.Read<int>(i, "avatar"));
+                        writer.WriteValue(result.Read<int>(i, "puesto"));
+                        string dsdsd = null;
+                        writer.WriteValue(dsdsd);
+                        writer.WriteValue(0);
+                        writer.WriteValue(0);
+                        writer.WriteEndArray();
+                    }
+                    writer.WriteEndArray();
+                    writer.WriteValue(gold);
+                    writer.WriteValue(cash);
+                    writer.WriteEndArray();
+                    writer.WriteEndArray();
+                    return sb.ToString();
+                }
+            }
+            else
+            {
+                StringBuilder sb = new StringBuilder();
+                StringWriter sw = new StringWriter(sb);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    writer.Formatting = Formatting.None;
+                    writer.WriteStartArray();
+                    writer.WriteValue((int)ServerOpcode.my_avatars);
+                    writer.WriteStartArray();
+                    writer.WriteStartArray();
+                    writer.WriteEndArray();
+                    writer.WriteValue(gold);
+                    writer.WriteValue(cash);
+                    writer.WriteEndArray();
+                    writer.WriteEndArray();
+                    return sb.ToString();
+                }
+            }
+            return "";
+        }
+
+        public void UpdateEquip(string _equipx)
+        {
+            JArray _equipd = JArray.Parse(_equipx);
+            string query = "";
+            SQLResult result = Program._SQL.Select("SELECT avatar FROM user_items WHERE id_user=?", user_id);
+            if (result.Count != 0)
+            {
+                for (int i = 0; i < _equipd.Count(); i++)
+                {
+                    query = query + " AND no !='" + _equipd[i].ToObject<int>() + "'";
+                }
+                for (int i = 0; i < _equipd.Count(); i++)
+                {
+                    bool actu1 = Program._SQL.Execute("UPDATE user_items SET puesto=1 WHERE no ='" + _equipd[i].ToObject<int>() + "' AND id_user='" + user_id + "' ");
+                    bool actu2 = Program._SQL.Execute("UPDATE user_items SET puesto=0 WHERE no !='" + _equipd[i].ToObject<int>() + "' " + query + " AND id_user='" + user_id + "' ");
+                }
+            }
+        }
+
+        public string BuyItems(string _item, string _tipo_precio, int _periodo, int _precio)
+        {
+            string avatar = _item.Replace("\"", "");
+            string tipo_precio = _tipo_precio;// true | false
+            int periodo = _periodo;   // 0=WEEK   1=MONTH     2=total
+            int precio = _precio;
+            string campo = "", campot = "";
+            if (tipo_precio == "true") { campo = "cash"; campot = "c"; } else { campo = "gold"; campot = "g"; }
+            SQLResult result = Program._SQL.Select("SELECT " + campo + " FROM users WHERE id=?", user_id);
+            if (result.Count != 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                StringWriter sw = new StringWriter(sb);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    writer.Formatting = Formatting.None;
+                    writer.WriteStartArray();
+                    writer.WriteValue((int)ServerOpcode.alert);
+                    if (result.Read<int>(0, campo) > precio)
+                    {
+                        SQLResult result2 = Program._SQL.Select("SELECT avatar FROM user_items WHERE id_user=" + user_id + " AND avatar=" + avatar);
+                        if (result2.Count == 0)
+                        {
+                            bool compra = Program._SQL.Execute("INSERT INTO user_items SET avatar='" + avatar + "',puesto=0,tipo_precio='" + campot + "',periodo='" + periodo + "',expira='',id_user='" + user_id + "' ");
+                            if (compra)
+                            {
+                                bool actumoneda = Program._SQL.Execute("UPDATE users SET " + campo + "=" + campo + "-" + precio + " WHERE id=" + user_id);
+                                writer.WriteValue("Good!");
+                                writer.WriteValue("Acabas de comprar el avatar.");
+                            }
+                        }
+                        else
+                        {
+                            writer.WriteValue("Sorry");
+                            writer.WriteValue("Ya habias comprado este avatar.");
+                        }
+                    }
+                    else
+                    {
+                        writer.WriteValue("Sorry");
+                        writer.WriteValue("Not enough Cash. You can get more by playing or charging.");
+                    }
+                    writer.WriteEndArray();
+                }
+                return sb.ToString();
+            }
+
+            return "";
+        }
+    }
+}

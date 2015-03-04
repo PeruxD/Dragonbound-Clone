@@ -1,0 +1,73 @@
+CACHE MANIFEST
+
+# code
+js/avatars.js?11
+js/game.js?11
+css/DragonBound.min.css?11
+
+# lib
+#//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js
+#//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js
+#//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/themes/base/jquery-ui.css
+js/jquery-2.0.3.min.js
+js/jquery-ui-1.10.3.min.js
+css/jquery-ui-1.10.3.min.css
+//connect.facebook.net/en_US/all.js
+
+# lobby
+#images/lobby_stuff6.png
+#images/themes/gl/bg_full.jpg
+images/themes/gl/maps.png?2
+images/bg-gb-scrollbar-track-y.png
+images/bg-gb-scrollbar-trackend-y.png
+images/bg-gb-scrollbar-thumb-y.png
+images/fb_boy.gif
+images/fb_girl.gif
+images/arrow.png
+css/images/ui-bg_flat_75_ffffff_40x100.png
+css/images/ui-icons_222222_256x240.png
+js/soundmanager2_flash9.swf
+images/avatars/fh00011.png
+images/avatars/fb00011.png
+images/volume.png
+images/slider-bg-track.png
+
+# XMAS THEME !!
+images/themes/xmas2013/lobby_bg5.png
+images/themes/xmas2013/room_bg3.png
+images/themes/xmas2013/lobby_stuff5.png
+images/themes/xmas2013/room_stuff4.png
+images/themes/xmas2013/game_stuff4.png
+images/themes/xmas2013/scores_stuff.png
+images/themes/xmas2013/shop_stuff.png
+images/themes/xmas2013/bg_full3.jpg
+
+# room
+#images/room_stuff2.png
+images/ready2.gif
+images/start2.gif
+images/me.gif
+images/items2.png
+images/bg_blue.jpg
+
+# game
+#images/game_stuff4.png
+images/turn_timer.png
+images/repeat_x.png
+images/thor.png
+images/lightnings.png
+images/1/gold.png
+images/1/turn.png
+images/1/turnwa.png
+images/1/bpush1.png
+images/1/bselect1.png
+#images/scores_stuff2.png
+//2.dragonbound.net/static/images/hotlink-ok/trans.gif
+
+# shop
+#images/shop_stuff3.png
+
+NETWORK:
+*
+http://*
+https://*
